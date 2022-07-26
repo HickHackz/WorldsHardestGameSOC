@@ -1,0 +1,144 @@
+
+module coin_manager (
+							input logic Clk, vs,
+							// Avalon Reset Input
+							input logic RESET,
+							input  logic AVL_WRITE,					// Avalon-MM Write
+							input  logic [3:0] AVL_BYTE_EN,			// Avalon-MM Byte Enable
+							input  [10:0] AVL_ADDR,	// Avalon-MM Address
+							input  logic [31:0] AVL_WRITEDATA,		// Avalon-MM Write Data
+							input  logic new_level,
+							input [9:0] DrawX, DrawY, PlayerX, PlayerY, PlayerS,
+							output collected_all, print_coin,
+							input initialize_level
+							);
+							
+		logic [5:0] collect_flag, enable, print_mark;
+		logic [9:0] x_pos [5:0], y_pos[5:0];
+		logic [9:0] level_offset;
+		
+		logic [21:0] read_data; // each coin has 21 bits of data stored in it (enable, collected, and x/y coordinates)
+		logic [10:0] mod_addr, read_addr; // address location we read the coin data from
+		
+		/* Rough estimate of what I expect coin_memory to look like
+		coin_memory ram2(		
+								.byteena_a(AVL_BYTE_EN), 
+								.clock(Clk), 
+								.data(AVL_WRITEDATA), 
+								.rdaddress(read_addr), 
+								.wraddress(mod_addr), 
+								.wren(AVL_WRITE),
+								.q(read_data)  
+							 ); */
+		
+		always_comb
+		begin: Coin_on_proc
+			if((print_mark & 6'b111111) != 0)
+				print_coin = 1'b1;
+			else
+				print_coin = 1'b0;
+		end
+		
+		always_comb
+		begin: Collect_check // inactive coins are counted as already collected
+			if(collect_flag == 6'b111111) // all active coins have been collected
+				collected_all = 1'b1;
+			else
+				collected_all = 1'b0;
+		end
+		
+				
+		
+		coin coin0(
+						.Reset(RESET),
+						.frame_clk(vs),
+						.refresh(new_level), // temporarily adding refresh to only coins 0 and 1
+						.enable(1'b1),
+						.x_pos(10'd176),
+						.y_pos(10'd176),
+						.PlayerX(PlayerX),
+						.PlayerY(PlayerY),
+						.PlayerS(PlayerS),
+						.DrawX(DrawX),
+						.DrawY(DrawY),
+						.collected(collect_flag[0]),
+						.print_coin(print_mark[0])
+		);
+		
+		coin coin1(
+						.Reset(RESET),
+						.frame_clk(vs),
+						.refresh(new_level),
+						.enable(1'b1),
+						.x_pos(10'd400),
+						.y_pos(10'd176),
+						.PlayerX(PlayerX),
+						.PlayerY(PlayerY),
+						.PlayerS(PlayerS),
+						.DrawX(DrawX),
+						.DrawY(DrawY),
+						.collected(collect_flag[1]),
+						.print_coin(print_mark[1])
+		);
+		
+		coin coin2(
+						.Reset(RESET),
+						.frame_clk(vs),
+						.enable(1'b1),
+						.x_pos(10'd176),
+						.y_pos(10'd304),
+						.PlayerX(PlayerX),
+						.PlayerY(PlayerY),
+						.PlayerS(PlayerS),
+						.DrawX(DrawX),
+						.DrawY(DrawY),
+						.collected(collect_flag[2]),
+						.print_coin(print_mark[2])
+		);
+		
+		coin coin3(
+						.Reset(RESET),
+						.frame_clk(vs),
+						.enable(1'b1),
+						.x_pos(10'd400),
+						.y_pos(10'd304),
+						.PlayerX(PlayerX),
+						.PlayerY(PlayerY),
+						.PlayerS(PlayerS),
+						.DrawX(DrawX),
+						.DrawY(DrawY),
+						.collected(collect_flag[3]),
+						.print_coin(print_mark[3])
+		);
+		
+		coin coin4(
+						.Reset(RESET),
+						.frame_clk(vs),
+						.enable(1'b0),
+						.x_pos(10'd200),
+						.y_pos(10'd64),
+						.PlayerX(PlayerX),
+						.PlayerY(PlayerY),
+						.PlayerS(PlayerS),
+						.DrawX(DrawX),
+						.DrawY(DrawY),
+						.collected(collect_flag[4]),
+						.print_coin(print_mark[4])
+		);
+		
+		coin coin5(
+						.Reset(RESET),
+						.frame_clk(vs),
+						.enable(1'b0),
+						.x_pos(10'd232),
+						.y_pos(10'd64),
+						.PlayerX(PlayerX),
+						.PlayerY(PlayerY),
+						.PlayerS(PlayerS),
+						.DrawX(DrawX),
+						.DrawY(DrawY),
+						.collected(collect_flag[5]),
+						.print_coin(print_mark[5])
+		);
+		
+endmodule

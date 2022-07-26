@@ -1,0 +1,33 @@
+module  color_mapper (input flag, input blank, input logic [11:0] fg, bg,
+							 //adding this line
+                      output logic [7:0]  Red, Green, Blue );
+ //
+
+    always_comb
+    begin:RGB_Display
+	 
+	if (!blank)
+	begin
+		Red = 4'b0000; //changed to red foreground
+		Green = 4'b0000;//changed to red foreground
+		Blue = 4'b0000;
+	end			
+	else
+		begin
+		 if ((flag == 1'b1))
+		 begin
+			Red = fg[11:8]; //changed to red foreground
+			Green = fg[7:4];;//changed to red foreground
+			Blue = fg[3:0];//changed to red foreground
+		end
+		else
+		begin
+			Red = bg[11:8]; //changed to red foreground
+			Green = bg[7:4];;//changed to red foreground
+			Blue = bg[3:0];//changed to red foreground
+		end
+	end
+
+    end
+    //
+endmodule

@@ -1,0 +1,49 @@
+module level_manager (
+	input logic Clk,
+	// Avalon Reset Input
+	input logic RESET,
+	input logic [2:0] blockcode,
+	// Avalon-MM Slave Signals
+	input  logic AVL_READ,					// Avalon-MM Read
+	input  logic AVL_WRITE,					// Avalon-MM Write
+	input  logic AVL_CS,					// Avalon-MM Chip Select
+	input  logic [3:0] AVL_BYTE_EN,			// Avalon-MM Byte Enable
+	input  [6:0] AVL_ADDR,
+	input  logic [11:0] VGA_ADDR,	// Avalon-MM Address
+	input  logic [31:0] AVL_WRITEDATA,		// Avalon-MM Write Data
+	input  logic new_level,
+	output logic [31:0] AVL_READDATA,
+	output logic [31:0] onchipq
+	);
+	logic [11:0] level_address, new_address;
+	
+	always_ff  always_ff @ (posedge Clk or posedge Reset )
+	begin
+		if (Reset)
+			level_address = 12'b0;
+		else
+		begin
+			if (new_level)
+				level_address += 8'h4b;
+			else
+				level_address = level_address;	
+	end
+	
+	assign new_address = level_address + VGA_ADDR;
+	
+	memory_access mem (
+	.RESET(RESET),
+	.blockcode(blockcode),
+	.AVL_READ(AVL_READ),					// Avalon-MM Read
+	.AVL_WRITE(AVL_WRITE),					// Avalon-MM Write
+	.AVL_CS(AVL_CS),	
+	.AVL_BYTE_EN(AVL_BYTE_EN),			// Avalon-MM Byte Enable
+	.AVL_ADDR(AVL_ADDR),
+	.VGA_ADDR(new_address),	//Avalon-MM Address
+	.AVL_WRITEDATA(AVL_WRITEDATA),		// Avalon-MM Write Data
+	.AVL_READDATA (AVL_READDATA),
+	.onchipq(onchipq),
+	.Clk(CLK)
+	);
+
+endmodule

@@ -1,0 +1,40 @@
+module sprite ( 
+					input [9:0] DrawX, DrawY, input [6:0] keycode,
+					output logic flag,
+					output logic [9:0] Sprite_X_Pos, Sprite_Y_Pos);
+					
+			
+    
+    logic [10:0] n;
+	 logic [10:0] sprite_addr, extn;
+	 logic [7:0] sprite_data, bitnumber, reversebits;
+	 
+	 //assign offset_x = DrawX - 2'd48;
+	 assign Sprite_X_Pos[9:3] = DrawX[9:3]; //because of the backporch
+	 assign Sprite_X_Pos[2:0] = 3'b000;
+	// assign offset_y =  - 2'd48;
+	 assign Sprite_Y_Pos[9:4] = DrawY[9:4];
+	 assign Sprite_Y_Pos[3:0] = 4'b0000;
+	 assign extn[6:0] = keycode;
+	 assign n = extn << 4;
+	 assign sprite_addr = DrawY - Sprite_Y_Pos +  n;
+	 always_comb
+	 begin
+		reversebits[7] = sprite_data[0];
+		reversebits[6] = sprite_data[1];
+		reversebits[5] = sprite_data[2];
+		reversebits[4] = sprite_data[3];
+		reversebits[3] = sprite_data[4];
+		reversebits[2] = sprite_data[5];
+		reversebits[1] = sprite_data[6];
+		reversebits[0] = sprite_data[7];
+	end
+		
+	 
+	 font_rom (.addr(sprite_addr), .data(sprite_data));
+	 assign bitnumber = DrawX - Sprite_X_Pos;
+
+	 assign flag = reversebits[bitnumber];
+	 
+endmodule
+	

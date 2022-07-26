@@ -1,0 +1,115 @@
+//-------------------------------------------------------------------------
+//    Player.sv                                                            --
+//    Viral Mehta                                                        --
+//    Spring 2005                                                        --
+//                                                                       --
+//    Modified by Stephen Kempf 03-01-2006                               --
+//                              03-12-2007                               --
+//    Translated by Joe Meng    07-07-2013                               --
+//    Fall 2014 Distribution                                             --
+//                                                                       --
+//    For use with ECE 298 Lab 7                                         --
+//    UIUC ECE Department                                                --
+//-------------------------------------------------------------------------
+
+
+module  player ( input Reset, frame_clk,
+					input [7:0] keycode,
+               output [9:0]  PlayerX, PlayerY, PlayerS );
+    
+    logic [9:0] Player_X_Pos, Player_X_Motion, Player_Y_Pos, Player_Y_Motion, Player_Size;
+	 
+    parameter [9:0] Player_X_Center=320;  // Center position on the X axis
+    parameter [9:0] Player_Y_Center=240;  // Center position on the Y axis
+    parameter [9:0] Player_X_Min=0;       // Leftmost point on the X axis
+    parameter [9:0] Player_X_Max=639;     // Rightmost point on the X axis
+    parameter [9:0] Player_Y_Min=0;       // Topmost point on the Y axis
+    parameter [9:0] Player_Y_Max=479;     // Bottommost point on the Y axis
+    parameter [9:0] Player_X_Step=1;      // Step size on the X axis
+    parameter [9:0] Player_Y_Step=1;      // Step size on the Y axis
+
+    assign Player_Size = 32;  // assigns the value 4 as a 10-digit binary number, ie "0000000100"
+   
+    always_ff @ (posedge Reset or posedge frame_clk )
+    begin: Move_Player
+        if (Reset)  // Asynchronous Reset
+        begin 
+            Player_Y_Motion <= 10'd0; //Player_Y_Step;
+				Player_X_Motion <= 10'd0; //Player_X_Step;
+				Player_Y_Pos <= Player_Y_Center;
+				Player_X_Pos <= Player_X_Center;
+        end
+           
+        else 
+        begin 
+				 if ( (Player_Y_Pos + Player_Size) >= Player_Y_Max )  // Player is at the bottom edge, BOUNCE!
+					  Player_Y_Motion <= (~ (Player_Y_Step) + 1'b1);  // 2's complement.
+					  
+				 else if ( (Player_Y_Pos - Player_Size) <= Player_Y_Min )  // Player is at the top edge, BOUNCE!
+					  Player_Y_Motion <= Player_Y_Step;
+					  
+				  else if ( (Player_X_Pos + Player_Size) >= Player_X_Max )  // Player is at the Right edge, BOUNCE!
+					  Player_X_Motion <= (~ (Player_X_Step) + 1'b1);  // 2's complement.
+					  
+				 else if ( (Player_X_Pos - Player_Size) <= Player_X_Min )  // Player is at the Left edge, BOUNCE!
+					  Player_X_Motion <= Player_X_Step;
+					  
+				 else 
+					  Player_Y_Motion <= Player_Y_Motion;  // Player is somewhere in the middle, don't bounce, just keep moving
+					  
+				 
+				 case (keycode)
+					8'h04 : begin
+
+							  Player_X_Motion <= -1;//A
+							  Player_Y_Motion<= 0;
+							  end
+					        
+					8'h07 : begin
+								
+					        Player_X_Motion <= 1;//D
+							  Player_Y_Motion <= 0;
+							  end
+
+							  
+					8'h16 : begin
+
+					        Player_Y_Motion <= 1;//S
+							  Player_X_Motion <= 0;
+							  end
+							  
+					8'h1A : begin
+					        Player_Y_Motion <= -1;//W
+							  Player_X_Motion <= 0;
+							 end	  
+					default: begin
+							  Player_Y_Motion <= 0;
+							  Player_X_Motion <= 0;
+							  end
+			   endcase
+				 
+				 Player_Y_Pos <= (Player_Y_Pos + Player_Y_Motion);  // Update Player position
+				 Player_X_Pos <= (Player_X_Pos + Player_X_Motion);
+			
+			
+	  /**************************************************************************************
+	    ATTENTION! Please answer the following quesiton in your lab report! Points will be allocated for the answers!
+		 Hidden Question #2/2:
+          Note that Player_Y_Motion in the above statement may have been changed at the same clock edge
+          that is causing the assignment of Player_Y_pos.  Will the new value of Player_Y_Motion be used,
+          or the old?  How will this impact behavior of the Player during a bounce, and how might that 
+          interact with a response to a keypress?  Can you fix it?  Give an answer in your Post-Lab.
+      **************************************************************************************/
+      
+			
+		end  
+    end
+       
+    assign PlayerX = Player_X_Pos;
+   
+    assign PlayerY = Player_Y_Pos;
+   
+    assign PlayerS = Player_Size;
+    
+
+endmodule

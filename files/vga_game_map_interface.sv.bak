@@ -1,0 +1,135 @@
+
+module vga_game_map_interface (
+	// Avalon Clock Input, note this clock is also used for VGA, so this must be 50Mhz
+	// We can put a clock divider here in the future to make this IP more generalizable
+	input logic CLK,
+	
+	// Avalon Reset Input
+	input logic RESET,
+
+	// Avalon-MM Slave Signals
+	input  logic AVL_READ,					// Avalon-MM Read
+	input  logic AVL_WRITE,					// Avalon-MM Write
+	input  logic AVL_CS,					// Avalon-MM Chip Select
+	input  logic [3:0] AVL_BYTE_EN,			// Avalon-MM Byte Enable
+	input  logic [11:0] AVL_ADDR,			// Avalon-MM Address
+	input  logic [31:0] AVL_WRITEDATA,		// Avalon-MM Write Data
+	output logic [31:0] AVL_READDATA,		// Avalon-MM Read Data
+	
+	// Exported Conduit (mapped to VGA port - make sure you export in Platform Designer)
+	output logic [3:0]  red, green, blue,	// VGA color channels (mapped to output pins in top-level)
+	output logic hs, vs						// VGA HS/VS
+);
+
+wire blank;
+//logic [31:0] LOCAL_REG       [600:0]; // Registers
+logic [31:0] onchipq, color_reg;
+//put other local variables here
+logic pixel_clk, sync, flag, not_flag; //deleted ready
+logic [9:0] DrawX, DrawY;
+logic [11:0] addr;
+logic [7:0] data, row, column, color_code;
+logic [6:0] keycode;
+logic [9:0] Sprite_X_Pos, Sprite_Y_Pos;
+logic [11:0] sram_address;
+//read_state_machine stm (.CLK(CLK), .AVL_READ(AVL_READ), .RESET(RESET), .ready(ready));
+
+
+logic [11:0] background, foreground;
+logic [7:0] Red, Green, Blue;
+//Declare submodules..e.g. VGA controller, ROMS, etc
+VGA_controller con (
+                            .Clk(CLK), 
+                            .Reset(RESET), 
+                            .hs(hs), 
+                            .vs(vs), 
+                            .pixel_clk(pixel_clk),
+                            .blank(blank),
+                            .sync(sync),
+                            .DrawX(DrawX),
+                            .DrawY(DrawY)  ); 
+									 
+color_mapper mapper(			
+									 .bg(background),
+									 .fg(foreground),
+									 .blank(blank),
+                            .flag(not_flag),
+                            .Red(Red),
+                            .Green(Green),
+                            .Blue(Blue)
+                         );
+memory_access mem (
+.RESET(RESET),
+.color_code(color_code),
+.AVL_READ(AVL_READ),					// Avalon-MM Read
+.AVL_WRITE(AVL_WRITE),					// Avalon-MM Write
+.AVL_CS(AVL_CS),	
+.AVL_BYTE_EN(AVL_BYTE_EN),			// Avalon-MM Byte Enable
+.AVL_ADDR(AVL_ADDR),
+.VGA_ADDR(sram_address),	//Avalon-MM Address
+.AVL_WRITEDATA(AVL_WRITEDATA),		// Avalon-MM Write Data
+.AVL_READDATA (AVL_READDATA),
+.onchipq(onchipq),
+.background(background),
+.foreground(foreground),
+.Clk(CLK)
+);
+
+
+
+
+
+
+
+
+
+
+//.*, .VGA_ADDR(sram_address), .color_code(color_code), .background(background), .foreground(foreground));
+
+assign column = Sprite_X_Pos >> 4; //3 for 8 wide character, 2 character / word, column of words
+
+assign row = Sprite_Y_Pos >> 4; //
+//font_rom rom (.*);
+assign sram_address = 20 * row + column;
+
+logic [9:0] char_col;
+
+assign char_col = Sprite_X_Pos >> 3; //8 bit wide character
+always_comb 
+begin
+	
+	if (char_col[0] == 1'b0)
+		begin
+			not_flag = flag ^ onchipq[15];
+			keycode = onchipq[14:8];
+			color_code = onchipq[7:0];
+		end
+
+	else 
+	begin
+		not_flag = flag ^ onchipq[31];
+		keycode = onchipq[30:24];
+		color_code = onchipq[23:16];
+	end
+end
+
+sprite sym (
+                    .DrawX(DrawX),
+                    .DrawY(DrawY),
+                    .keycode(keycode),
+                    .flag(flag),
+                    .Sprite_X_Pos(Sprite_X_Pos),
+                    .Sprite_Y_Pos(Sprite_Y_Pos)  );   
+// Read and write from AVL interface to register block, note that READ waitstate = 1, so this should be in always_ff
+
+
+
+assign red = Red[3:0];
+assign green = Green[3:0];
+assign blue = Blue[3:0];
+
+
+//handle drawing (may either be combinational or sequential - or both).
+		
+
+endmodule

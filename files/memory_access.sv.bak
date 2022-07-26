@@ -1,0 +1,67 @@
+module memory_access (
+			
+input logic Clk,
+	
+	// Avalon Reset Input
+	input logic RESET,
+	input logic [2:0] blockcode,
+	// Avalon-MM Slave Signals
+	input  logic AVL_READ,					// Avalon-MM Read
+	input  logic AVL_WRITE,					// Avalon-MM Write
+	input  logic AVL_CS,					// Avalon-MM Chip Select
+	input  logic [3:0] AVL_BYTE_EN,			// Avalon-MM Byte Enable
+	input  [6:0] AVL_ADDR,
+	input  logic [11:0] VGA_ADDR,	// Avalon-MM Address
+	input  logic [31:0] AVL_WRITEDATA,		// Avalon-MM Write Data
+	output logic [31:0] AVL_READDATA,
+	output logic [31:0] onchipq,
+	);
+	
+	logic ram_rwen;
+	onchipram ram (.byteena_a(AVL_BYTE_EN), .clock(Clk), .data(AVL_WRITEDATA), .rdaddress(VGA_ADDR), .wraddress(AVL_ADDR), .wren(ram_rwen),
+						.q(onchipq));
+
+
+	always_ff @(posedge Clk) 
+	begin
+	
+	if (RESET)
+	begin
+		ColorPal[0] = 32'h00000000;
+		ColorPal[1] = 32'h00000000;
+		ColorPal[2] = 32'h00000000;
+		ColorPal[3] = 32'h00000000;
+		ColorPal[4] = 32'h00000000;
+		ColorPal[5] = 32'h00000000;
+		ColorPal[6] = 32'h00000000;
+		ColorPal[7] = 32'h00000000;
+
+	end
+	else if (AVL_CS) 
+	begin
+		if (AVL_READ) 
+			if (regaccess)
+				AVL_READDATA = ColorPal[AVL_ADDR[2:0]]; //grabs the word register for specified address above 	
+		
+		if (AVL_WRITE)
+		begin
+			if (regaccess)
+			begin
+				unique case (AVL_BYTE_EN)
+				4'b1111 : ColorPal[AVL_ADDR[2:0]] <= AVL_WRITEDATA;
+				4'b1100 : ColorPal[AVL_ADDR[2:0]][31:16] <= AVL_WRITEDATA[31:16];
+				4'b0011 : ColorPal[AVL_ADDR[2:0]][15:0] <= AVL_WRITEDATA[15:0];
+				4'b1000 : ColorPal[AVL_ADDR[2:0]][31:24] <= AVL_WRITEDATA[31:24];
+				4'b0100 : ColorPal[AVL_ADDR[2:0]][23:16] <= AVL_WRITEDATA[23:16];
+				4'b0010 : ColorPal[AVL_ADDR[2:0]][15:8] <= AVL_WRITEDATA[15:8];
+				4'b0001 : ColorPal[AVL_ADDR[2:0]][7:0] <= AVL_WRITEDATA[7:0];
+				endcase
+			end	
+		end
+	
+
+		
+	end
+	end
+endmodule
+	// Avalon-MM Read Data

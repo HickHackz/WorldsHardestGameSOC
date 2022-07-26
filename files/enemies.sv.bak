@@ -1,0 +1,107 @@
+module enemy (
+					input Reset, frame_clk,
+					input [9:0] start_x, start_y, center_x, center_y,
+					input [9:0] PlayerX, PlayerY, PlayerS,
+					input [9:0] DrawX, DrawY,
+					input direction,	// movement pattern forward (1) or reverse (0)
+					input enable,
+					input [3:0] speed,
+					input [2:0] movement, // linear, square, or circular movement
+					input [9:0] range,
+					output collision,
+					output print_enemy
+);
+
+
+	
+	 logic [9:0] Enemy_X_Pos, Enemy_Y_Pos, Enemy_X_Motion, Enemy_Y_Motion, size;
+	 logic switch;
+	 
+	 int DistX, DistY, DistX_draw, DistY_draw;
+	 
+	 parameter [9:0] Enemy_X_Start=420;  // temp values for object testing
+    parameter [9:0] Enemy_Y_Start=180;
+
+	 assign size = 8;
+	 
+	 always_ff @ (posedge Reset or posedge frame_clk )
+    begin: Move_Enemy
+       if (Reset)  // Asynchronous Reset
+       begin
+			Enemy_X_Motion <= 10'd0;
+			Enemy_Y_Motion <= 10'd0;
+			Enemy_Y_Pos <= start_y; // 
+			Enemy_X_Pos <= start_x; // start_x
+       end
+		  
+		 else
+		 begin
+				case (movement)
+					3'b000 : begin // linear movement in x-direction
+										if (direction) // +x direction
+										begin
+											if (Enemy_X_Pos - start_x == 0) // Enemy has returned to starting point, sent it forward
+												Enemy_X_Motion <= speed;
+											else if (Enemy_X_Pos - start_x == range) // Enemy has reached the end of it's path, send it back
+												Enemy_X_Motion <= (~(speed) + 1'b1);
+										end
+									
+										else // -x direction
+										begin
+											if (Enemy_X_Pos - start_x == range) // Enemy has returned to starting point, sent it forward
+												Enemy_X_Motion <= speed;
+											else if (Enemy_X_Pos - start_x == 0) // Enemy has reached the end of it's path, send it back
+												Enemy_X_Motion <= (~(speed) + 1'b1);
+										end
+								end
+								
+					3'b100 : begin // linear movement in +y-direction
+										if (direction) // +y direction
+										begin
+											if (Enemy_Y_Pos - start_y == range) // Enemy has returned to starting point, sent it forward
+												Enemy_Y_Motion <= speed;
+											else if (Enemy_Y_Pos - start_Y == 0) // Enemy has reached the end of it's path, send it back
+												Enemy_Y_Motion <= (~(speed) + 1'b1);
+										end
+									
+										else // -y direction
+										begin
+											if (Enemy_Y_Pos - start_y == range) // Enemy has returned to starting point, sent it forward
+												Enemy_Y_Motion <= speed;
+											else if (Enemy_Y_Pos - start_y == 0) // Enemy has reached the end of it's path, send it back
+												Enemy_Y_Motion <= (~(speed) + 1'b1);
+										end
+									
+						default: begin		// no movement
+									Enemy_Y_Motion <= 0;
+									Enemy_X_Motion <= 0;
+									end
+									
+				endcase
+				
+				Enemy_Y_Pos = Enemy_Y_Pos + Enemy_Y_Motion;
+				Enemy_X_Pos = Enemy_X_Pos + Enemy_X_Motion;
+		 end
+	 end
+	 
+	 always_comb
+	 begin: player_collision
+		DistX = PlayerX - Enemy_X_Pos;
+		DistY = PlayerY - Enemy_Y_Pos;
+		if ((DistX*DistX + size <= PlayerS*PlayerS / 4) || (DistY*DistY + size <= PlayerS*PlayerS / 4))
+			collision = 1;
+		else
+			collision = 0;
+	 end
+	 
+	 always_comb
+	 begin: Enemy_on_proc
+		DistX_draw = DrawX - Enemy_X_Pos;
+		DistY_draw = DrawY - Enemy_Y_Pos;
+		if ((DistX_draw*DistX_draw + DistY_draw*DistY_draw) <= (size*size))
+			print_enemy = 1;
+		else
+			print_enemy = 0;
+	end
+
+endmodule
